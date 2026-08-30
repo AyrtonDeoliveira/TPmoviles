@@ -16,7 +16,7 @@ Entrega del MVP: **23/09/2026** (demo de punta a punta).
 
 ## Stack
 
-- **App móvil:** Expo + React Native + TypeScript
+- **App móvil:** Expo SDK 54 + React Native 0.81 + TypeScript
 - **Backend:** Node.js + Express (pendiente)
 - **Base de datos / Storage / Auth:** Supabase (PostgreSQL)
 - **IA:** por definir
@@ -25,7 +25,7 @@ Entrega del MVP: **23/09/2026** (demo de punta a punta).
 
 - Node.js 20 o superior
 - npm
-- App **Expo Go** en el celular, o un emulador Android / iOS
+- App **Expo Go** en el celular (compatible con **Expo SDK 54**), o un emulador Android / iOS
 
 ## Cómo correr la app móvil
 
