@@ -1,9 +1,8 @@
-import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import { config } from './config.js';
 
 const app = express();
-const PORT = process.env.PORT || 4000;
 
 // La app movil corre en otro origen (Expo), asi que habilitamos CORS.
 app.use(cors());
@@ -17,6 +16,7 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     servicio: 'backend-mvp',
+    entorno: config.entorno,
     hora: new Date().toISOString(),
     arrancadoEn: arrancadoEn.toISOString(),
     uptimeSegundos: Math.round(process.uptime()),
@@ -28,7 +28,7 @@ app.get('/', (req, res) => {
   res.json({ mensaje: 'Backend del MVP. Probar GET /health' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Backend escuchando en http://localhost:${PORT}`);
-  console.log(`Probar: http://localhost:${PORT}/health`);
+app.listen(config.puerto, () => {
+  console.log(`Backend escuchando en http://localhost:${config.puerto}`);
+  console.log(`Probar: http://localhost:${config.puerto}/health`);
 });

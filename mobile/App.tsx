@@ -1,13 +1,7 @@
 import { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import Constants from 'expo-constants';
-
-// URL del backend.
-// En el celular con Expo Go, "localhost" apunta al celular, no a la PC.
-// Por eso deducimos la IP de la PC a partir del host de Expo (Metro).
-const hostDeExpo = Constants.expoConfig?.hostUri?.split(':')[0];
-const API_URL = `http://${hostDeExpo ?? 'localhost'}:4000`;
+import { API_URL } from './src/config';
 
 type EstadoHealth =
   | { estado: 'cargando' }

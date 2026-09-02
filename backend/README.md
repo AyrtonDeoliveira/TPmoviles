@@ -22,6 +22,22 @@ npm run dev            # recarga al guardar (node --watch)
 
 El server queda en `http://localhost:4000`.
 
+## Variables de entorno
+
+Se definen en `backend/.env` (no se sube al repo). Plantilla en `.env.example`.
+Toda la lectura de env pasa por `src/config.js`; el resto del código importa
+`config` desde ahí y nunca usa `process.env` directo.
+
+| Variable                     | Obligatoria | Descripción                                         |
+|------------------------------|-------------|-----------------------------------------------------|
+| `PORT`                       | No (4000)   | Puerto del backend.                                 |
+| `NODE_ENV`                   | No (development) | Entorno de ejecución.                          |
+| `SUPABASE_URL`               | Todavía no  | URL del proyecto Supabase (Semana 1-2).             |
+| `SUPABASE_SERVICE_ROLE_KEY`  | Todavía no  | Key privada de Supabase. **Solo backend.**          |
+| `IA_API_KEY`                 | Todavía no  | Key del proveedor de IA (a definir).                |
+
+Las claves privadas (Supabase service role, IA) van **solo acá**, nunca en `mobile/`.
+
 ## Endpoints
 
 | Método | Ruta       | Descripción                          |

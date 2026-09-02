@@ -42,7 +42,9 @@ Se abre Expo en la terminal. Desde ahí:
 - O presioná `a` para abrir en un emulador Android, `w` para abrir en el navegador.
 
 La pantalla inicial hace un `GET /health` al backend y muestra si responde. Para verlo
-conectado hay que levantar también el backend (abajo).
+conectado hay que levantar también el backend (abajo). La app deduce sola la URL del
+backend; si necesitás forzarla, copiá `mobile/.env.example` a `mobile/.env` y seteá
+`EXPO_PUBLIC_API_URL`.
 
 ## Cómo correr el backend
 
