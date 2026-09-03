@@ -12,7 +12,7 @@ Entrega del MVP: **23/09/2026** (demo de punta a punta).
 |-------------|-----------------------------------------------------------------|
 | `mobile/`   | App móvil en Expo / React Native (TypeScript).                  |
 | `backend/`  | Backend propio en Node.js + Express. Ver `backend/README.md`.   |
-| `docs/`     | Plan de trabajo y guía interna del proyecto (PDF).              |
+| `docs/`     | Plan de trabajo, guía interna (PDF) y notas de diseño.         |
 
 ## Stack
 

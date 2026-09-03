@@ -61,6 +61,18 @@ curl http://localhost:4000/health
 }
 ```
 
+## Base de datos
+
+El modelo de datos (PostgreSQL / Supabase) está en `db/`:
+
+- `db/schema.sql` — esquema completo (tablas, índices, RLS, triggers, planes).
+- `db/seed.sql` — datos de ejemplo para desarrollo.
+- `db/README.md` — cómo aplicarlo.
+
+Descripción y diagrama: [`../docs/modelo-de-datos.md`](../docs/modelo-de-datos.md).
+
+Todavía no está conectado al backend (eso es el Paso 6).
+
 ## Probar desde la app móvil
 
 Con el backend corriendo, abrí la app (`cd mobile && npm start`). La pantalla inicial
