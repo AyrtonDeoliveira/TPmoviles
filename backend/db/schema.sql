@@ -288,6 +288,17 @@ create trigger trg_actions_updated_at
   for each row execute function public.set_updated_at();
 
 -- =============================================================
+--  diagnostics · tabla auxiliar para el chequeo de conexión (Paso 6)
+--  El backend escribe/lee/borra una fila acá para verificar la base.
+--  Sin política RLS: solo la service role (backend) la toca.
+-- =============================================================
+create table if not exists public.diagnostics (
+  id          uuid primary key default gen_random_uuid(),
+  note        text,
+  created_at  timestamptz not null default now()
+);
+
+-- =============================================================
 --  Helper: ¿el workspace es del usuario actual? (para RLS)
 -- =============================================================
 create or replace function public.is_workspace_owner(ws uuid)
@@ -314,6 +325,7 @@ alter table public.files         enable row level security;
 alter table public.metrics       enable row level security;
 alter table public.analyses      enable row level security;
 alter table public.actions       enable row level security;
+alter table public.diagnostics   enable row level security;
 
 -- plans: lectura para cualquier usuario autenticado
 drop policy if exists plans_read_all on public.plans;

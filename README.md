@@ -14,10 +14,14 @@ Entrega del MVP: **23/09/2026** (demo de punta a punta).
 | `backend/`  | Backend propio en Node.js + Express. Ver `backend/README.md`.   |
 | `docs/`     | Plan de trabajo, guía interna (PDF) y notas de diseño.         |
 
+Docs clave: [`docs/modelo-de-datos.md`](docs/modelo-de-datos.md) ·
+[`docs/contrato-api.md`](docs/contrato-api.md) ·
+[`docs/estado-semana-1.md`](docs/estado-semana-1.md)
+
 ## Stack
 
 - **App móvil:** Expo SDK 54 + React Native 0.81 + TypeScript
-- **Backend:** Node.js + Express (pendiente)
+- **Backend:** Node.js + Express (auth con Supabase Auth ya funcionando)
 - **Base de datos / Storage / Auth:** Supabase (PostgreSQL)
 - **IA:** por definir
 

@@ -18,8 +18,8 @@ export const config = {
   puerto: Number(leer('PORT', { porDefecto: 4000 })),
   entorno: leer('NODE_ENV', { porDefecto: 'development' }),
 
-  // Supabase: todavia no se usa. Se completa en la Semana 1-2.
-  // Cuando exista la integracion, pasar estas a { obligatoria: true }.
+  // Supabase (PostgreSQL / Storage / Auth). Opcional hasta que exista el
+  // proyecto de Supabase; cuando sea imprescindible, pasar a { obligatoria: true }.
   supabase: {
     url: leer('SUPABASE_URL'),
     serviceRoleKey: leer('SUPABASE_SERVICE_ROLE_KEY'),
