@@ -125,6 +125,15 @@ export function mbAmenosBytes(mb) {
   return Math.round(mb * BYTES_POR_MB);
 }
 
+// Cupo mensual efectivo de análisis: para planes con análisis completos
+// habilitados (full > 0) se usa ese número; si no, el de vistas previas
+// (caso Gratuito: 0 completos / 1 preview → el cupo es 1). NULL = sin tope.
+export function limiteAnalisisMensual(plan) {
+  if (plan.max_analyses_full_monthly === null || plan.max_analyses_full_monthly === undefined) return null;
+  if (plan.max_analyses_full_monthly > 0) return plan.max_analyses_full_monthly;
+  return plan.max_analyses_preview_monthly ?? 0;
+}
+
 // Análisis completos guardados este mes calendario (UTC) — para la cuota.
 export async function analisisCompletosEsteMes(userId) {
   const db = getSupabase();

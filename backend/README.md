@@ -35,15 +35,19 @@ Toda la lectura de env pasa por `src/config.js`; el resto del código importa
 | `NODE_ENV`                   | No (development) | Entorno de ejecución.                          |
 | `SUPABASE_URL`               | Sí (para la DB) | *Project URL* del proyecto Supabase.            |
 | `SUPABASE_SERVICE_ROLE_KEY`  | Sí (para la DB) | Key *service_role* (secreta). **Solo backend.** |
-| `IA_API_KEY`                 | Todavía no  | Key del proveedor de IA (a definir).                |
+| `IA_API_KEY`                 | Sí (para la IA) | Key de Gemini (Google AI Studio). **Solo backend.** |
+| `GEMINI_MODEL`               | No (`gemini-3.6-flash`) | Modelo de Gemini a usar.            |
+| `IA_TIMEOUT_MS`              | No (60000)  | Tiempo máximo de una llamada a la IA.               |
+| `BRAVE_API_KEY`              | No (opcional) | Key de Brave Search. Sin ella, el análisis sigue sin evidencia externa. |
+| `BRAVE_TIMEOUT_MS`           | No (8000)   | Tiempo máximo de una búsqueda.                      |
 
-Las claves privadas (Supabase service role, IA) van **solo acá**, nunca en `mobile/`.
+Las claves privadas (Supabase service role, IA, Brave) van **solo acá**, nunca en `mobile/`.
 
 ## Endpoints
 
 | Método | Ruta            | Auth | Descripción                                        |
 |--------|-----------------|------|----------------------------------------------------|
-| GET    | `/health` · `/health/db` | — | Estado del backend / chequeo real de la base. |
+| GET    | `/health` · `/health/db` · `/health/ia` · `/health/brave` | — | Estado del backend / base / Gemini / Brave (chequeos reales). |
 | POST   | `/auth/register` · `/auth/login` | — | Alta y login. Devuelven sesión. |
 | POST   | `/auth/logout`  | Bearer | Cierra la sesión. |
 | GET    | `/me`           | Bearer | Perfil + plan efectivo y límites. |
@@ -53,15 +57,25 @@ Las claves privadas (Supabase service role, IA) van **solo acá**, nunca en `mob
 | DELETE | `/workspaces/:id/metrics/:mid` | Bearer | Borrar una métrica. |
 | GET/POST | `/workspaces/:id/files` | Bearer | Subir (multipart, campo `archivo`) / listar. |
 | DELETE | `/workspaces/:id/files/:fid` | Bearer | Borrar archivo (libera cuota). |
-| GET    | `/workspaces/:id/dashboard` | Bearer | Resumen + métricas (+ acciones/riesgos si Pro). |
+| GET    | `/workspaces/:id/dashboard` | Bearer | Resumen + métricas + último análisis (gateado por plan). |
 | GET/PATCH | `/workspaces/:id/actions/:aid` | Bearer | Cambiar estado de una acción. |
+| POST   | `/workspaces/:id/analyze` | Bearer | Genera el análisis con IA (sincrónico, ~15-25 s). Gate por plan, cuota mensual, 1 activo por cuenta. |
+| GET    | `/workspaces/:id/instagram` | Bearer | Estado de la conexión (simulada). |
+| POST   | `/workspaces/:id/instagram/connect` \| `.../disconnect` | Bearer | Simula conectar Instagram; profesional carga 4 métricas de ejemplo. |
 
 Contrato completo (request/response, errores, endpoints de Semana 3):
 [`../docs/contrato-api.md`](../docs/contrato-api.md).
 
 ```bash
 curl http://localhost:4000/health
-node scripts/smoke-semana2.mjs   # prueba auth + workspaces + aislamiento + límites + archivos
+npm run ia:check                          # llamada real a Gemini (sin tocar workspaces)
+npm run brave:check                       # llamada real a Brave Search
+node scripts/smoke-semana2.mjs            # auth + workspaces + aislamiento + límites + archivos
+node scripts/probar-contexto-ia.mjs       # contexto por workspace + aislamiento del prompt
+node scripts/probar-analisis-ia.mjs       # salida estructurada (10 campos, exactamente 3 c/u)
+node scripts/probar-analyze-endpoint.mjs  # POST /analyze end-to-end (gate + cuota + acciones)
+node scripts/probar-instagram.mjs         # conectar/desconectar Instagram simulado
+node scripts/preguntar-ia.mjs "..."        # pregunta libre a Gemini, para probar a mano
 ```
 
 Estructura de `src/`:
@@ -72,12 +86,20 @@ server.js               arma la app y monta los routers
 db/supabase.js          clientes de Supabase (service role)
 db/check.js             chequeo de conexión (npm run db:check)
 db/storage.js           bucket privado 'workspace-files' + helpers
+ia/gemini.js            cliente REST mínimo de Gemini (generarTexto, generarJSON)
+ia/check.js             chequeo de conexión real (npm run ia:check)
+ia/brave.js             cliente de Brave Search API
+ia/braveCheck.js        chequeo de conexión real (npm run brave:check)
+ia/busqueda.js          arma la consulta (país+ciudad+categoría) y busca evidencia externa
+ia/contexto.js          arma el contexto del workspace + preguntarSobreWorkspace
+ia/prompt.js            arma los prompts (contextual y de análisis)
+ia/esquemaAnalisis.js   responseSchema de Gemini + validación de negocio
+ia/analisis.js          genera y valida el análisis estructurado (con 1 reintento)
 middleware/auth.js      requireAuth (valida el Bearer token)
 middleware/workspace.js requireWorkspace (carga + aislamiento) · bloquearSiAnalisisActivo
-routes/                 health · auth · me · workspaces · metrics · files · dashboard · actions
+routes/                 health · auth · me · workspaces · metrics · files · dashboard · actions · analyze · instagram
 plans/limites.js        límites de cada plan + uso actual (workspaces, bytes, análisis/mes)
-ia/contexto.js          arma el contexto del workspace para la IA (Semana 3)
-lib/                    validar.js · respuestas.js
+lib/                    validar.js · respuestas.js · entregaAnalisis.js (gate por plan) · datasetInstagram.js (simulado)
 ```
 
 El bucket de Storage `workspace-files` (privado) se crea solo al arrancar si no existe.

@@ -191,22 +191,32 @@ guardados (fallidos y re-consultas no).
 | `error` | text | si `status = fallida` |
 | `created_at` / `completed_at` | timestamptz | |
 
-Esquema esperado de `result` (sección 4.3 de la spec, ajustado por Semana 2):
+Esquema implementado de `result` (sección 4.3 de la spec, ajustado por Semana 2
+y por la implementación de Semana 3 — `backend/src/ia/esquemaAnalisis.js`):
 
 ```json
 {
   "resumen": "80-120 palabras",
   "calidad_contexto": "completo | parcial | insuficiente",
-  "fortalezas": ["3 items: hecho/inferencia + evidencia"],
-  "riesgos": ["3 items: probabilidad, impacto, mitigación"],
-  "oportunidades": ["3 items: señal, relevancia, fuente"],
-  "acciones_30_dias": ["exactamente 3: acción, motivo, impacto, esfuerzo, métrica"],
-  "metricas": ["valor, período, fuente, estado"],
+  "fortalezas": [{ "texto": "…", "evidencia": "…" }],
+  "riesgos": [{ "texto": "…", "probabilidad": "alta|media|baja", "impacto": "alto|medio|bajo", "mitigacion": "…" }],
+  "oportunidades": [{ "texto": "…", "relevancia": "…", "fuente": "…" }],
+  "acciones_30_dias": [{ "accion": "…", "motivo": "…", "impacto": "alto|medio|bajo", "esfuerzo": "alto|medio|bajo", "metrica": "…" }],
   "escenario_90_dias": { "nivel": "bajo|base|alto", "supuestos": [], "limitaciones": [] },
-  "fuentes": ["título, url, fecha, afirmación"],
+  "fuentes": [{ "titulo": "…", "url": "…", "fecha": "…", "afirmacion": "…" }],
   "advertencias": ["límites, datos ausentes, carácter no garantizado"]
 }
 ```
+
+`fortalezas`/`riesgos`/`oportunidades` van **exactamente 3** cada uno,
+`acciones_30_dias` **exactamente 3**. Forzado por `responseSchema` de Gemini +
+una validación de negocio (`validarResultado`) que reintenta una vez si falla.
+
+**Decisión:** se sacó `metricas` de lo que genera la IA (a diferencia del
+listado original de Matu) — pedirle al modelo que "recite" números es riesgo
+de invención; el dashboard sirve las métricas reales directo de la tabla
+`metrics`, no desde `result`. `fuentes` queda vacío mientras no haya búsqueda
+web integrada (Paso 6 de Semana 3).
 
 Estimación **100% cualitativa** (Semana 2): bajo/base/alto con supuestos y
 limitaciones, sin porcentajes ni montos futuros. Los datos actuales sí se

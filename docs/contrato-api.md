@@ -187,36 +187,81 @@ Errores: `415 formato_no_admitido`, `413 archivo_grande`, `403 storage_lleno`,
 
 ### `GET /workspaces/:id/dashboard`
 Sin análisis: `{ "emprendimiento": {…}, "sinAnalisis": true, "metricas": [...] }`.
-Con análisis y plan **Gratuito** (`bloqueado: true`): `resumen`, `escenario90d`,
-`vistaPrevia: { fortaleza, riesgo, oportunidad }`, `desbloquearCon: "pro"`.
-Con plan **Pro** (`bloqueado: false`): además `fortalezas[]`, `riesgos[]`,
-`oportunidades[]`, `fuentes[]`, `advertencias[]` y `acciones[]` (las 3 del último
-análisis, con su `estado`).
+Con análisis: `{ "emprendimiento": {…}, "metricas": [...], "analisis": { … } }`,
+donde `analisis` tiene la **misma forma gateada por plan** que devuelve
+`POST /workspaces/:id/analyze` (ver abajo) — es el mismo serializador
+(`construirEntregaAnalisis`) para no duplicar la lógica del gate en dos lugares.
 
 ### `GET /workspaces/:id/actions` · `PATCH /workspaces/:id/actions/:actionId`
 `PATCH` body `{ "estado": "pendiente" | "en_curso" | "hecha" }` → `{ "accion": { … } }`.
 `404 no_encontrado` si la acción no es de ese emprendimiento.
 
+### `GET /workspaces/:id/instagram` · `POST .../connect` · `POST .../disconnect`
+CU-S2-09. **Sin integración real con Meta** (fuera de alcance del MVP): `connect`
+simula la conexión.
+```json
+{ "conectado": true, "handle": "almaceramica", "tipoCuenta": "profesional", "estado": "conectada" }
+```
+`POST /connect` body: `{ "handle": "...", "tipoCuenta": "personal" | "profesional" }`.
+- `profesional` → queda `conectada` y se cargan **4 métricas simuladas** (`seguidores`,
+  `alcance`, `interacciones`, `visitas_perfil`; `origen: "simulada"`, nunca `"instagram"`)
+  del último período de 30 días. Response incluye `metricas: [...]`.
+- `personal` → queda `permiso_faltante` y no se cargan métricas; el `mensaje`
+  explica que Insights necesita una cuenta profesional y que puede seguir
+  cargando datos a mano.
+`POST /disconnect` → vuelve a `no_conectada`; las métricas ya cargadas quedan
+como historial (no se borran).
+
+### `POST /workspaces/:id/analyze`
+Sin body. **Sincrónico** (procesa la llamada a Gemini dentro del mismo
+request; puede tardar ~15-25 s — el frontend debe mostrar un estado de carga,
+no hace falta polling). Response `201`:
+```json
+{
+  "analisis": {
+    "id": "uuid", "estado": "completada", "fecha": "…",
+    "calidadContexto": "parcial", "objetivo": "consultas",
+    "resumen": "…", "escenario90d": { "nivel": "base", "supuestos": [...], "limitaciones": [...] },
+    "bloqueado": false,
+    "fortalezas": [{ "texto": "…", "evidencia": "…" }],
+    "riesgos": [{ "texto": "…", "probabilidad": "media", "impacto": "alto", "mitigacion": "…" }],
+    "oportunidades": [{ "texto": "…", "relevancia": "…", "fuente": "…" }],
+    "fuentes": [],
+    "advertencias": ["…"],
+    "acciones": [{ "id": "uuid", "titulo": "…", "motivo": "…", "impacto": "alto", "esfuerzo": "bajo", "metrica": "…", "estado": "pendiente", "orden": 1 }]
+  }
+}
+```
+En plan **Gratuito**, en vez de `fortalezas/riesgos/oportunidades/fuentes/advertencias/acciones`
+viene `"bloqueado": true, "vistaPrevia": { "fortaleza": {…}, "riesgo": {…}, "oportunidad": {…} }, "desbloquearCon": "pro"`
+(sin las 3 acciones ni el análisis completo — el análisis se generó y guardó
+igual, solo cambia qué se entrega).
+
+**Búsqueda web:** se investigó con **Brave Search API** (país + ciudad +
+categoría del workspace, hasta 4 resultados). Si hay resultados relevantes,
+`fuentes` viene poblado con título/url/fecha/afirmación **reales y
+verificables** (probado con casos reales). Se descartó el grounding nativo de
+Gemini (`google_search`): devuelve `429` sin cupo en el free tier aunque una
+llamada normal funcione bien. Si Brave falla o no hay `BRAVE_API_KEY`, el
+análisis sigue igual sin evidencia externa y lo declara en `advertencias`
+(nunca bloquea, permitido por la spec de Semana 2 de Matu).
+
+Errores:
+- `400 contexto_insuficiente` — con `faltan: [...]` (campos del contexto mínimo que faltan).
+- `409 analisis_activo` — ya hay un análisis en curso en la cuenta.
+- `403 limite_plan` — con `limite` y `sugerencia: "activar_pro"` si corresponde.
+- `502 analisis_fallo` — la IA falló o no devolvió un resultado válido (no consume cuota; se puede reintentar). Incluye `analisisId`.
+- `503 ia_ocupada` — Gemini está sin cupo/rate-limited (transitorio); reintentar en unos minutos. No consume cuota.
+
 ---
 
 ## Endpoints planificados (Semana 3)
 
-### `POST /workspaces/:id/analyze`
-Request: `{ "tipo": "vista_previa" | "completo" }`. Ejecuta el análisis con IA
-(async): responde `202 { "analisis": { "id": "uuid", "estado": "procesando" } }`.
-El frontend hace polling a `GET /workspaces/:id/analyses/:analysisId`.
-Error: `403 limite_plan` si supera `analisisCompletosMes`; `403 requiere_pro`
-si `tipo:"completo"` y el plan es Gratuito.
-
 ### `GET /workspaces/:id/analyses`
 Historial, recortado a `plan.limites.historialMeses`.
 ```json
-{ "analyses": [ { "id": "uuid", "tipo": "completo", "estado": "completada",
-  "creadoEn": "…", "resultado": { … }, "proyeccion": { … } } ] }
+{ "analyses": [ { "id": "uuid", "estado": "completada", "creadoEn": "…", … } ] }
 ```
-
-### `PATCH /workspaces/:id/actions/:actionId`
-Request: `{ "estado": "pendiente" | "en_curso" | "hecha" }`. Response: la acción actualizada.
 
 ### `POST /subscription/activate-demo`
 Request: `{ "planId": "pro" }`. Activa la suscripción simulada

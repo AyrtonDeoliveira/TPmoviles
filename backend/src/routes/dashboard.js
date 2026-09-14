@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { getSupabase } from '../db/supabase.js';
 import { asyncHandler } from '../lib/respuestas.js';
 import { getPlanDeUsuario } from '../plans/limites.js';
+import { construirEntregaAnalisis } from '../lib/entregaAnalisis.js';
 
 export const dashboardRouter = Router({ mergeParams: true });
 
@@ -52,60 +53,21 @@ dashboardRouter.get(
       });
     }
 
-    const r = analisis.result ?? {};
-    const base = {
-      emprendimiento: { id: ws.id, nombre: ws.name },
-      analisis: {
-        id: analisis.id,
-        fecha: analisis.created_at,
-        calidadContexto: analisis.context_quality,
-        objetivo: analisis.objective,
-      },
-      resumen: r.resumen ?? null,
-      escenario90d: analisis.projection ?? r.escenario_90_dias ?? null,
-      metricas,
-    };
-
-    if (!esPro) {
-      // Vista previa (CU-S2-11): resumen + 1 de cada + escenario. Sin las 3 acciones.
-      return res.json({
-        ...base,
-        bloqueado: true,
-        vistaPrevia: {
-          fortaleza: (r.fortalezas ?? [])[0] ?? null,
-          riesgo: (r.riesgos ?? [])[0] ?? null,
-          oportunidad: (r.oportunidades ?? [])[0] ?? null,
-        },
-        desbloquearCon: 'pro',
-      });
+    let acciones = [];
+    if (esPro) {
+      const { data } = await db
+        .from('actions')
+        .select('*')
+        .eq('workspace_id', ws.id)
+        .eq('analysis_id', analisis.id)
+        .order('position', { ascending: true });
+      acciones = data ?? [];
     }
 
-    // Pro: dashboard completo.
-    const { data: acciones } = await db
-      .from('actions')
-      .select('*')
-      .eq('workspace_id', ws.id)
-      .eq('analysis_id', analisis.id)
-      .order('position', { ascending: true });
-
     res.json({
-      ...base,
-      bloqueado: false,
-      fortalezas: r.fortalezas ?? [],
-      riesgos: r.riesgos ?? [],
-      oportunidades: r.oportunidades ?? [],
-      fuentes: analisis.sources ?? [],
-      advertencias: r.advertencias ?? [],
-      acciones: (acciones ?? []).map((a) => ({
-        id: a.id,
-        titulo: a.title,
-        motivo: a.reason,
-        impacto: a.impact,
-        esfuerzo: a.effort,
-        metrica: a.target_metric,
-        estado: a.status,
-        orden: a.position,
-      })),
+      emprendimiento: { id: ws.id, nombre: ws.name },
+      metricas,
+      analisis: construirEntregaAnalisis(analisis, { esPro, acciones }),
     });
   })
 );

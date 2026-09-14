@@ -25,12 +25,21 @@ export const config = {
     serviceRoleKey: leer('SUPABASE_SERVICE_ROLE_KEY'),
   },
 
-  // Proveedor de IA (se va a probar Gemini). La integración es de Semana 3.
+  // Proveedor de IA (Gemini). Semana 3.
   ia: {
     apiKey: leer('IA_API_KEY'),
+    modelo: leer('GEMINI_MODEL', { porDefecto: 'gemini-3.6-flash' }),
     // Tiempo máximo de una ejecución de análisis; al agotarse → estado 'fallida'
     // (dependencia pedida por QA, CU-S2-10).
     timeoutMs: Number(leer('IA_TIMEOUT_MS', { porDefecto: 60000 })),
+  },
+
+  // Búsqueda web para el análisis (Brave Search API). Opcional: si falta la
+  // key, el análisis sigue funcionando sin evidencia externa (limitación
+  // declarada, permitido por Matu).
+  brave: {
+    apiKey: leer('BRAVE_API_KEY'),
+    timeoutMs: Number(leer('BRAVE_TIMEOUT_MS', { porDefecto: 8000 })),
   },
 };
 

@@ -13,6 +13,8 @@ import { metricsRouter } from './metrics.js';
 import { filesRouter } from './files.js';
 import { dashboardRouter } from './dashboard.js';
 import { actionsRouter } from './actions.js';
+import { analyzeRouter } from './analyze.js';
+import { instagramRouter } from './instagram.js';
 
 export const workspacesRouter = Router();
 
@@ -149,3 +151,5 @@ workspacesRouter.use('/:workspaceId/metrics', requireWorkspace, metricsRouter);
 workspacesRouter.use('/:workspaceId/files', requireWorkspace, filesRouter);
 workspacesRouter.use('/:workspaceId/dashboard', requireWorkspace, dashboardRouter);
 workspacesRouter.use('/:workspaceId/actions', requireWorkspace, actionsRouter);
+workspacesRouter.use('/:workspaceId/analyze', requireWorkspace, analyzeRouter);
+workspacesRouter.use('/:workspaceId/instagram', requireWorkspace, instagramRouter);

@@ -1,4 +1,6 @@
 import { getSupabase } from '../db/supabase.js';
+import { generarTexto } from './gemini.js';
+import { armarPromptContextual } from './prompt.js';
 
 // Arma el contexto de un emprendimiento para pasárselo a la IA (Paso 8 / Semana 3).
 // SOLO usa datos de ese workspace: perfil declarado, métricas, archivos procesados
@@ -81,6 +83,16 @@ export async function armarContexto(workspaceId) {
       resumen: a.result?.resumen ?? null,
     })),
   };
+}
+
+// Paso 3 (Semana 3): primera respuesta contextual. Arma el contexto de ESE
+// workspace nada más, arma el prompt delimitado y le pregunta a Gemini.
+// Sirve para probar en aislamiento que la IA no mezcla emprendimientos.
+export async function preguntarSobreWorkspace(workspaceId, pregunta) {
+  const contexto = await armarContexto(workspaceId);
+  const prompt = armarPromptContextual(contexto, pregunta);
+  const { texto, modelo } = await generarTexto(prompt);
+  return { contexto, texto, modelo };
 }
 
 // Evalúa si el contexto mínimo alcanza para analizar (CU-S2-10).
