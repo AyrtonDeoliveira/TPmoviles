@@ -43,51 +43,44 @@ reflejan la misma regla como segunda barrera.
 
 ## Tablas
 
-### `plans` — catálogo de planes y límites
-**Gratuito / Business / Pro** (actualización de producto:
-`actualizacion_planes_y_almacenamiento.pdf`). Todos los knobs viven acá; la app
-solo los consulta, no los duplica. `NULL` en un límite = sin tope. Los precios y
-números son placeholders hasta validarlos con usuarios y definir el proveedor de IA.
+### `plans` — catálogo de planes y límites — **CONGELADO** (Semana 2)
+**Gratuito / Pro.** Los knobs viven acá; la app solo los consulta, no los duplica.
+`NULL` en un límite = sin tope. **Unidades decimales:** 1 MB = 1.000.000 bytes,
+1 GB = 1.000 MB. Storage y análisis se cuentan por **cuenta**, entre todos los
+emprendimientos.
 
 | Columna | Tipo | Notas |
 |---|---|---|
-| `id` | text (PK) | `free` \| `business` \| `pro` |
-| `name` | text | "Gratuito" / "Business" / "Pro" |
-| `price_cents` / `price_annual_cents` | integer | mensual (paywall, pago simulado) / anual sugerido |
+| `id` | text (PK) | `free` \| `pro` |
+| `name` | text | "Gratuito" / "Pro" |
+| `price_cents` | integer | mensual (paywall, pago simulado) |
 | `max_workspaces` | integer | |
-| `max_collaborators_per_workspace` | integer | 0 = solo propietario (**multiusuario es backlog**) |
-| `max_storage_mb` | integer | total de la **cuenta**, repartido entre workspaces |
+| `max_storage_mb` | integer | total de la cuenta |
 | `max_file_mb` | integer | tamaño máximo por archivo |
 | `max_analyses_preview_monthly` | integer | vistas previas de IA por mes (NULL = incluida) |
 | `max_analyses_full_monthly` | integer | análisis completos por mes |
-| `max_searches_monthly` | integer | búsquedas / investigaciones web por mes |
-| `history_months` | integer | meses de historial visibles (1 = solo el último) |
-| `max_instagram_accounts` | integer | cuentas de Instagram conectables |
-| `features` | jsonb | `dashboard`, `instagram`, `search`, `export`, `support` (cualitativos) |
+| `history_months` | integer | meses de historial visibles (1 = solo la última vista previa) |
+| `features` | jsonb | `dashboard` (`resumen`\|`completo`), `analisis_completo` (bool) |
 
-Valores iniciales:
+Valores:
 
-| | Gratuito | Business | Pro |
-|---|---|---|---|
-| Precio mensual | USD 0 | USD 9,99 | USD 19,99 |
-| Precio anual | — | USD 99 | USD 199 |
-| Workspaces | 1 | 3 | 10 |
-| Colaboradores/ws | 0 | 2 | 5 |
-| Almacenamiento | 500 MB | 5 GB | 25 GB |
-| Máx. por archivo | 10 MB | 25 MB | 50 MB |
-| Análisis completos/mes | 0 | 15 | 50 |
-| Vista previa/mes | 1 | incluida | incluida |
-| Búsquedas/mes | 0 (muestra) | 15 | 50 |
-| Historial | 1 mes | 6 meses | 24 meses |
-| Cuentas Instagram | 1 | 3 | 10 |
+| | Gratuito | Pro |
+|---|---|---|
+| Precio mensual | USD 0 | USD 9,99 |
+| Workspaces | 1 | 5 |
+| Almacenamiento | 50 MB | 1 GB |
+| Máx. por archivo | 10 MB | 10 MB |
+| Análisis completos/mes | 0 | 20 |
+| Vista previa/mes | 1 | incluida |
+| Historial | última vista previa | 12 meses |
 
-**Enforcement en el MVP** (recorrido de demo): `max_workspaces`, `max_storage_mb`
-(sumando los workspaces del usuario), `max_file_mb`, tipos de archivo permitidos
-(PDF, DOCX, XLSX, CSV, JPG, PNG) y el gate de análisis completo (Gratuito no puede →
-paywall). **Backlog** (no se valida todavía): colaboradores/multiusuario,
-contadores mensuales de análisis/búsquedas y su reset, papelera con retención de
-30 días, dedup por hash, varias cuentas de Instagram, exportaciones, precios
-anuales y el plan Founder / pago único.
+Reglas de cuota (Semana 2): solo consumen los análisis **completados y guardados**
+(los fallidos y consultar resultados guardados no). Reinicio: mes calendario UTC,
+sin acumulación. Paso a Pro: conserva el consumo del mes y amplía a 20.
+
+**Enforcement en el MVP:** `max_workspaces`, `max_storage_mb` (sumando los
+workspaces del usuario), `max_file_mb`, tipos de archivo (**PDF, DOCX, TXT, CSV**),
+cuota de análisis completos y el gate de análisis completo (Gratuito → paywall).
 
 ### `users` — perfil de la app (1:1 con `auth.users`)
 | Columna | Tipo | Notas |
@@ -119,7 +112,7 @@ Reglas de cambio de plan (backend):
 - **Bajar:** no se borran datos. Si la cuenta excede el nuevo límite de storage
   puede consultar y descargar, pero no subir hasta liberar espacio. Si excede el
   número de workspaces, quedan todos en lectura y el usuario elige cuáles activar
-  *(backlog: en el MVP alcanza con no dejar crear nuevos)*.
+  *(en el MVP no hay pantalla de baja; alcanza con no dejar crear nuevos)*.
 - **Cancelar:** conserva el nivel pago hasta `current_period_end`.
 
 ### `workspaces` — el emprendimiento (FR-03 / 3.1)
@@ -128,13 +121,14 @@ Reglas de cambio de plan (backend):
 | `id` | uuid (PK) | |
 | `owner_user_id` | uuid (FK) | → `users.id`, `on delete cascade` |
 | `name` | text | obligatorio, 2-80 caracteres |
-| `country` / `city` | text | país y ciudad/área |
+| `country` | text | país |
+| `city` | text | ciudad/área, 2-100 caracteres |
 | `category` | text | catálogo + opción "Otro" |
 | `stage` | text | `idea` \| `lanzamiento` \| `ventas` \| `crecimiento` |
 | `offer` | text | oferta principal, 10-500 |
 | `target_audience` | text | cliente objetivo, 10-500 |
-| `objective_90d` | text | `ventas` \| `alcance` \| `consultas` \| `validacion` \| `otro` — alimenta la estimación |
-| `objective_90d_note` | text | detalle libre del objetivo |
+| `objective_90d` | text | `ventas` \| `alcance` \| `consultas` \| `clientes` \| `validacion` \| `otro` — alimenta la estimación |
+| `objective_90d_note` | text | 2-100 caracteres; **obligatorio si `objective_90d = 'otro'`** |
 | `current_sales_value` / `current_sales_period` / `currency` | numeric / text / text | ventas o consultas actuales (opcional) |
 | `website_url` | text | opcional |
 | `instagram_handle` | text | opcional |
@@ -161,8 +155,9 @@ Reglas de cambio de plan (backend):
 |---|---|---|
 | `id` | uuid (PK) | |
 | `workspace_id` | uuid (FK) | → `workspaces.id`, `on delete cascade` |
-| `metric_type` | text | `alcance` \| `vistas` \| `interacciones` \| `tasa_interaccion` \| `seguidores` \| `visitas_perfil` \| `consultas` \| `ventas` \| `conversion` |
-| `value` | numeric | `NULL` permitido si `status <> 'ok'` |
+| `metric_type` | text | `alcance` \| `vistas` \| `interacciones` \| `tasa_interaccion` \| `seguidores` \| `visitas_perfil` \| `consultas` \| `clientes` \| `pedidos` \| `ventas_importe` \| `conversion` |
+| `value` | numeric | `NULL` si `status <> 'ok'`. Enteros no negativos salvo importes |
+| `currency` | text | solo para `ventas_importe` (ISO 4217) |
 | `period_start` / `period_end` | timestamptz | período al que corresponde |
 | `recorded_at` | timestamptz | cuándo se registró/actualizó |
 | `source` | text | `manual` \| `instagram` \| `calculada` \| `analysis` \| `import` \| `simulada` |
@@ -171,24 +166,32 @@ Reglas de cambio de plan (backend):
 Constraint: si `status = 'ok'`, `value` no puede ser `NULL`.
 
 ### `analyses` — historial de análisis con IA (contrato sección 4)
+
+**Semana 2:** todo análisis se **genera y guarda completo**. Lo que cambia por
+plan es qué se **entrega**: Gratuito ve la vista previa; Pro ve el resultado
+completo sin re-ejecutar IA ni consumir otro cupo. **1 análisis activo
+(`pendiente`/`procesando`) por cuenta.** Solo consumen cuota los completados y
+guardados (fallidos y re-consultas no).
+
 | Columna | Tipo | Notas |
 |---|---|---|
 | `id` | uuid (PK) | |
 | `workspace_id` | uuid (FK) | → `workspaces.id`, `on delete cascade` |
 | `requested_by` | uuid (FK) | → `users.id`, `on delete set null` |
-| `kind` | text | `vista_previa` \| `completo` |
+| `kind` | text | `vista_previa` \| `completo` (siempre se genera completo; el valor refleja qué se entregó) |
+| `consume_cupo` | boolean | `false` en fallidos y re-consultas |
 | `objective` | text | `objective_90d` del workspace al momento de correr |
 | `status` | text | `pendiente` \| `procesando` \| `completada` \| `fallida` |
 | `context_quality` | text | `completo` \| `parcial` \| `insuficiente` |
 | `input` | jsonb | contexto enviado a la IA |
-| `result` | jsonb | salida estructurada (ver abajo) — el backend valida el esquema antes de guardar |
-| `projection` | jsonb | `escenario_90_dias` (bajo/base/alto). **No** es garantía |
+| `result` | jsonb | salida estructurada (ver abajo) — validada antes de guardar |
+| `projection` | jsonb | `escenario_90_dias` **cualitativo** bajo/base/alto. Sin porcentajes ni montos futuros |
 | `sources` | jsonb | lista: título, url, fecha, afirmación respaldada |
 | `model` / `prompt_version` | text | trazabilidad de la generación |
 | `error` | text | si `status = fallida` |
 | `created_at` / `completed_at` | timestamptz | |
 
-Esquema esperado de `result` (sección 4.3 de la spec):
+Esquema esperado de `result` (sección 4.3 de la spec, ajustado por Semana 2):
 
 ```json
 {
@@ -197,17 +200,21 @@ Esquema esperado de `result` (sección 4.3 de la spec):
   "fortalezas": ["3 items: hecho/inferencia + evidencia"],
   "riesgos": ["3 items: probabilidad, impacto, mitigación"],
   "oportunidades": ["3 items: señal, relevancia, fuente"],
-  "acciones_30_dias": ["3-5 items: acción, motivo, impacto, esfuerzo, métrica"],
+  "acciones_30_dias": ["exactamente 3: acción, motivo, impacto, esfuerzo, métrica"],
   "metricas": ["valor, período, fuente, estado"],
-  "escenario_90_dias": { "nivel": "bajo|base|alto", "rango": [n, n], "supuestos": [], "confianza": "" },
+  "escenario_90_dias": { "nivel": "bajo|base|alto", "supuestos": [], "limitaciones": [] },
   "fuentes": ["título, url, fecha, afirmación"],
   "advertencias": ["límites, datos ausentes, carácter no garantizado"]
 }
 ```
 
-Regla de estimación: sin línea base → **no** inventar porcentaje; mostrar
-potencial cualitativo. Con línea base → rangos bajo/base/alto con supuestos y
-confianza. La proyección debe poder reconstruirse desde los valores guardados.
+Estimación **100% cualitativa** (Semana 2): bajo/base/alto con supuestos y
+limitaciones, sin porcentajes ni montos futuros. Los datos actuales sí se
+muestran como números. Se evita implementar un modelo de proyección numérica
+antes del 23/09.
+
+**Contenido gratuito exacto:** resumen + 1 fortaleza + 1 riesgo + 1 oportunidad +
+escenario cualitativo con limitaciones. No las 3 acciones ni el análisis completo.
 
 ### `actions` — acciones priorizadas del dashboard (IA + usuario)
 | Columna | Tipo | Notas |

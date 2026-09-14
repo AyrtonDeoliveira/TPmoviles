@@ -105,8 +105,8 @@ Header `Authorization: Bearer <accessToken>`. Perfil + plan efectivo del usuario
     "id": "free",
     "nombre": "Gratuito",
     "limites": {
-      "workspaces": 1, "almacenamientoMb": 500, "archivoMaxMb": 10,
-      "analisisCompletosMes": 0, "busquedasMes": 0, "historialMeses": 1
+      "workspaces": 1, "almacenamientoMb": 50, "archivoMaxMb": 10,
+      "analisisPreviewMes": 1, "analisisCompletosMes": 0, "historialMeses": 1
     }
   }
 }
@@ -115,55 +115,91 @@ Error: `401 sin_token | token_invalido`.
 
 ---
 
-## Endpoints planificados (Semana 2-3) — formas propuestas
+## Endpoints implementados (Semana 2)
 
-Todos requieren `Authorization: Bearer <accessToken>` y validan que el
-`workspace` sea del usuario (si no → `404 no_encontrado`, sin revelar existencia).
+Todos requieren `Authorization: Bearer <accessToken>`. Los que llevan `:id`
+validan que el emprendimiento sea del usuario; si no → **`404 no_encontrado`**
+(no se revela si existe). Campos en camelCase; contexto según
+`docs/modelo-de-datos.md` / FR-03.
 
 ### `GET /workspaces`
-Lista los emprendimientos activos (no eliminados) del usuario.
 ```json
-{ "workspaces": [ { "id": "uuid", "nombre": "…", "categoria": "…", "etapa": "ventas",
-  "creadoEn": "…" } ] }
+{ "workspaces": [ { "id": "uuid", "nombre": "…", "pais": "…", "ciudad": "…",
+  "categoria": "…", "etapa": "ventas", "oferta": "…", "clienteObjetivo": "…",
+  "objetivo90d": "consultas", "objetivo90dNota": null, "sitioWeb": null,
+  "instagramHandle": null, "instagramEstado": "no_conectada",
+  "ventasActuales": { "valor": 12, "periodo": "30 dias", "moneda": "ARS" },
+  "creadoEn": "…", "actualizadoEn": "…" } ] }
 ```
 
 ### `POST /workspaces`
-Request (campos según `docs/modelo-de-datos.md` / FR-03):
+Request (obligatorios: `nombre` 2-80, `pais` 2-100, `ciudad` 2-100, `categoria`,
+`etapa`, `oferta` 10-500, `clienteObjetivo` 10-500, `objetivo90d`):
 ```json
 {
-  "nombre": "Alma Cerámica",
-  "pais": "Argentina", "ciudad": "Córdoba",
+  "nombre": "Alma Cerámica", "pais": "Argentina", "ciudad": "Córdoba",
   "categoria": "Productos físicos", "etapa": "ventas",
-  "oferta": "10-500 chars", "clienteObjetivo": "10-500 chars",
-  "objetivo90d": "consultas", "objetivo90dNota": "texto libre",
+  "oferta": "…", "clienteObjetivo": "…",
+  "objetivo90d": "consultas", "objetivo90dNota": "sólo si objetivo90d = 'otro'",
   "sitioWeb": "https://…", "instagramHandle": "almaceramica",
   "ventasActuales": { "valor": 12, "periodo": "30 dias", "moneda": "ARS" }
 }
 ```
-Response `201`: `{ "workspace": { …, "id": "uuid" } }`.
-Error: `403 limite_plan` si supera `plan.limites.workspaces`.
+`objetivo90d` ∈ `ventas | alcance | consultas | clientes | validacion | otro`.
+`etapa` ∈ `idea | lanzamiento | ventas | crecimiento`.
+Response `201`: `{ "workspace": { … } }`.
+Errores: `400 datos_invalidos` (con `detalles: [...]`), `403 limite_plan`
+(con `limite` y `sugerencia: "activar_pro"`).
 
 ### `GET /workspaces/:id` · `PATCH /workspaces/:id` · `DELETE /workspaces/:id`
-`GET` devuelve el workspace completo. `PATCH` acepta los mismos campos que `POST`
-(parciales). `DELETE` es lógico (marca `deleted_at`) y responde `{ "ok": true }`.
+- `GET` → `{ "workspace": { … } }`.
+- `PATCH` → mismos campos que `POST`, parciales. **`409 analisis_activo`** si hay
+  un análisis en curso en la cuenta. `400 sin_cambios` si el body está vacío.
+- `DELETE` → eliminación lógica (`deleted_at`); libera cupo y storage.
+  `{ "ok": true }`. También `409 analisis_activo`.
 
-### `POST /workspaces/:id/files`
-`multipart/form-data` con el archivo. Valida tipo (PDF, DOCX, XLSX, CSV, JPG, PNG),
-tamaño (`plan.limites.archivoMaxMb`) y espacio total (`almacenamientoMb`).
-Response `201`: `{ "file": { "id": "uuid", "nombre": "…", "tamanioBytes": 1234,
-"estado": "pendiente" } }`. Error: `413 archivo_grande` | `403 storage_lleno`.
+### `GET /workspaces/:id/metrics` · `POST` · `DELETE /workspaces/:id/metrics/:metricId`
+`GET` → última métrica por tipo + `conversion` calculada:
+```json
+{ "metricas": [ { "id": "uuid", "tipo": "consultas", "valor": 40, "moneda": null,
+  "periodo": { "inicio": "…", "fin": "…" }, "origen": "manual", "estado": "ok",
+  "registradoEn": "…" } ],
+  "conversion": { "valor": 25, "calculable": true } }
+```
+`POST` body: `{ "metricas": [ { "tipo": "...", "valor": n, "periodo": { "inicio": "...", "fin": "..." }, "moneda": "ARS" } ] }`.
+Tipos: contadores (`consultas`, `clientes`, `pedidos`, `seguidores`, `alcance`,
+`interacciones`, `visitas_perfil`, `vistas`) = enteros ≥ 0; `ventas_importe` =
+número + `moneda` obligatoria. Todos con `periodo`. `origen` = `manual`.
+Errores: `400 tipo_invalido | valor_invalido | periodo_invalido | falta_moneda`.
+
+### `POST /workspaces/:id/files` · `GET` · `DELETE /workspaces/:id/files/:fileId`
+`POST` = `multipart/form-data`, campo **`archivo`**. Valida formato
+(**PDF, DOCX, TXT, CSV**), tamaño (`plan.limites.archivoMaxMb`, 10 MB) y espacio
+de la cuenta (`almacenamientoMb`). Response `201`:
+```json
+{ "archivo": { "id": "uuid", "nombre": "datos.csv", "tipo": "text/csv",
+  "tamanioBytes": 1234, "estado": "procesado", "creadoEn": "…" } }
+```
+Errores: `415 formato_no_admitido`, `413 archivo_grande`, `403 storage_lleno`,
+`400 archivo_vacio | sin_archivo`.
+`DELETE` quita el archivo de Storage y libera la cuota → `{ "ok": true }`.
+*(La extracción de texto para la IA se agrega en Semana 3.)*
 
 ### `GET /workspaces/:id/dashboard`
-```json
-{
-  "resumen": { "situacion": "…", "ultimoAnalisis": "…", "calidadContexto": "parcial" },
-  "acciones": [ { "id": "uuid", "titulo": "…", "impacto": "alto", "esfuerzo": "medio",
-    "metrica": "consultas", "estado": "pendiente" } ],
-  "metricas": [ { "tipo": "alcance", "valor": 9000, "periodo": ["…","…"],
-    "fuente": "instagram", "estado": "ok" } ]
-}
-```
-En plan Gratuito el dashboard viene con `bloqueado: true` y solo el resumen.
+Sin análisis: `{ "emprendimiento": {…}, "sinAnalisis": true, "metricas": [...] }`.
+Con análisis y plan **Gratuito** (`bloqueado: true`): `resumen`, `escenario90d`,
+`vistaPrevia: { fortaleza, riesgo, oportunidad }`, `desbloquearCon: "pro"`.
+Con plan **Pro** (`bloqueado: false`): además `fortalezas[]`, `riesgos[]`,
+`oportunidades[]`, `fuentes[]`, `advertencias[]` y `acciones[]` (las 3 del último
+análisis, con su `estado`).
+
+### `GET /workspaces/:id/actions` · `PATCH /workspaces/:id/actions/:actionId`
+`PATCH` body `{ "estado": "pendiente" | "en_curso" | "hecha" }` → `{ "accion": { … } }`.
+`404 no_encontrado` si la acción no es de ese emprendimiento.
+
+---
+
+## Endpoints planificados (Semana 3)
 
 ### `POST /workspaces/:id/analyze`
 Request: `{ "tipo": "vista_previa" | "completo" }`. Ejecuta el análisis con IA
@@ -183,7 +219,7 @@ Historial, recortado a `plan.limites.historialMeses`.
 Request: `{ "estado": "pendiente" | "en_curso" | "hecha" }`. Response: la acción actualizada.
 
 ### `POST /subscription/activate-demo`
-Request: `{ "planId": "business" | "pro" }`. Activa la suscripción simulada
+Request: `{ "planId": "pro" }`. Activa la suscripción simulada
 (idempotente: repetir no crea duplicados). Response `200`:
 ```json
 { "suscripcion": { "planId": "pro", "estado": "active", "simulada": true, "desde": "…" } }

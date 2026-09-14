@@ -25,9 +25,12 @@ export const config = {
     serviceRoleKey: leer('SUPABASE_SERVICE_ROLE_KEY'),
   },
 
-  // Proveedor de IA: a definir.
+  // Proveedor de IA (se va a probar Gemini). La integración es de Semana 3.
   ia: {
     apiKey: leer('IA_API_KEY'),
+    // Tiempo máximo de una ejecución de análisis; al agotarse → estado 'fallida'
+    // (dependencia pedida por QA, CU-S2-10).
+    timeoutMs: Number(leer('IA_TIMEOUT_MS', { porDefecto: 60000 })),
   },
 };
 

@@ -43,35 +43,44 @@ Las claves privadas (Supabase service role, IA) van **solo acá**, nunca en `mob
 
 | Método | Ruta            | Auth | Descripción                                        |
 |--------|-----------------|------|----------------------------------------------------|
-| GET    | `/`             | —    | Mensaje de bienvenida.                              |
-| GET    | `/health`       | —    | Estado del backend (uptime, si Supabase está ok).   |
-| GET    | `/health/db`    | —    | Chequeo real de la base (lectura + escritura).      |
-| POST   | `/auth/register`| —    | Crea la cuenta y devuelve sesión. `{ nombre, email, password }` |
-| POST   | `/auth/login`   | —    | Inicia sesión. `{ email, password }`               |
-| POST   | `/auth/logout`  | Bearer | Cierra la sesión.                                 |
-| GET    | `/me`           | Bearer | Perfil del usuario + plan efectivo y sus límites.  |
+| GET    | `/health` · `/health/db` | — | Estado del backend / chequeo real de la base. |
+| POST   | `/auth/register` · `/auth/login` | — | Alta y login. Devuelven sesión. |
+| POST   | `/auth/logout`  | Bearer | Cierra la sesión. |
+| GET    | `/me`           | Bearer | Perfil + plan efectivo y límites. |
+| GET/POST | `/workspaces` | Bearer | Listar / crear emprendimiento (valida contexto + límite de plan). |
+| GET/PATCH/DELETE | `/workspaces/:id` | Bearer | Ver / editar / eliminar (lógico). Aislado por dueño. |
+| GET/POST | `/workspaces/:id/metrics` | Bearer | Métricas manuales (con período y moneda). |
+| DELETE | `/workspaces/:id/metrics/:mid` | Bearer | Borrar una métrica. |
+| GET/POST | `/workspaces/:id/files` | Bearer | Subir (multipart, campo `archivo`) / listar. |
+| DELETE | `/workspaces/:id/files/:fid` | Bearer | Borrar archivo (libera cuota). |
+| GET    | `/workspaces/:id/dashboard` | Bearer | Resumen + métricas (+ acciones/riesgos si Pro). |
+| GET/PATCH | `/workspaces/:id/actions/:aid` | Bearer | Cambiar estado de una acción. |
 
-Contrato completo (formas de request/response, errores, endpoints planificados):
+Contrato completo (request/response, errores, endpoints de Semana 3):
 [`../docs/contrato-api.md`](../docs/contrato-api.md).
 
 ```bash
 curl http://localhost:4000/health
-curl -X POST http://localhost:4000/auth/register -H 'Content-Type: application/json' \
-  -d '{"nombre":"Ana","email":"ana@ejemplo.com","password":"contrasena8"}'
+node scripts/smoke-semana2.mjs   # prueba auth + workspaces + aislamiento + límites + archivos
 ```
 
 Estructura de `src/`:
 
 ```
-config.js            variables de entorno (único punto)
-server.js            arma la app y monta los routers
-db/supabase.js       clientes de Supabase (service role)
-db/check.js          chequeo de conexión (npm run db:check)
-middleware/auth.js   requireAuth (valida el Bearer token)
-routes/              health.js · auth.js · me.js
-plans/limites.js     límites de cada plan + helpers
-lib/                 validar.js · respuestas.js
+config.js               variables de entorno (único punto)
+server.js               arma la app y monta los routers
+db/supabase.js          clientes de Supabase (service role)
+db/check.js             chequeo de conexión (npm run db:check)
+db/storage.js           bucket privado 'workspace-files' + helpers
+middleware/auth.js      requireAuth (valida el Bearer token)
+middleware/workspace.js requireWorkspace (carga + aislamiento) · bloquearSiAnalisisActivo
+routes/                 health · auth · me · workspaces · metrics · files · dashboard · actions
+plans/limites.js        límites de cada plan + uso actual (workspaces, bytes, análisis/mes)
+ia/contexto.js          arma el contexto del workspace para la IA (Semana 3)
+lib/                    validar.js · respuestas.js
 ```
+
+El bucket de Storage `workspace-files` (privado) se crea solo al arrancar si no existe.
 
 ## Base de datos
 

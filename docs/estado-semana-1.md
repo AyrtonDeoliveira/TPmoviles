@@ -30,8 +30,8 @@ env pasa por `src/config.js`; nada de `process.env` suelto. `.env.example` con
 (1:1 con `auth.users`), `subscriptions`, `workspaces`, `files`, `metrics`,
 `analyses`, `actions`, `diagnostics`. Índices, RLS (segunda barrera; el backend
 usa service role), triggers `updated_at` y `handle_new_user`, vista
-`user_current_plan`. Alineado con la especificación funcional de Matu y con la
-actualización de planes (3 tiers Gratuito/Business/Pro).
+`user_current_plan`. Alineado con la especificación funcional de Matu (Semana 1 y
+2): **2 planes Gratuito/Pro** ($9,99, 50 MB / 1 GB), unidades decimales.
 
 **Paso 6 — Conexión a la base.** `@supabase/supabase-js` con la service role key.
 `src/db/supabase.js` (cliente + validación de que la URL sea la de la API).
@@ -87,18 +87,13 @@ npm start                 # QR con Expo Go, o 'w' para web
 
 ## Pendiente / decisiones abiertas
 
-- **Proveedor de IA + búsqueda web.** Sin definir. Opciones (doc de Matu): OpenAI
-  Responses API con `web_search`, o Brave Search API + un LLM aparte. Pesa recién
-  en Semana 3.
-- **Colaboradores / multiusuario.** El modelo tiene el knob
-  (`max_collaborators_per_workspace`) pero no se implementa; a confirmar con el
-  equipo si entra al MVP (recomendación: no).
-- **Nombres de plan** — quedaron `Gratuito` / `Business` / `Pro`. Confirmar con
-  Lu y Matu para que la UI y QA usen los mismos.
+- **Proveedor de IA.** Se probará **Gemini** (free tier; key ya obtenida). El
+  módulo `src/ia/` va agnóstico. Integración en Semana 3.
+- **Planes** — CERRADO: 2 tiers Gratuito/Pro, $9,99, 50 MB / 1 GB (Semana 2 de
+  Matu). Colaboradores/multiusuario fuera del MVP.
 - **Refresh token automático** — hoy el frontend re-loguea cuando expira el
   `accessToken`; el refresh con `refreshToken` queda para Semana 2.
-- **Contrato de API** — revisar `docs/contrato-api.md` con Lu en la reunión de
-  inicio de semana.
+- **Contrato de API** — revisar `docs/contrato-api.md` con Lu.
 
 ## Para Semana 2
 
