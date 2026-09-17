@@ -253,19 +253,37 @@ Errores:
 - `502 analisis_fallo` — la IA falló o no devolvió un resultado válido (no consume cuota; se puede reintentar). Incluye `analisisId`.
 - `503 ia_ocupada` — Gemini está sin cupo/rate-limited (transitorio); reintentar en unos minutos. No consume cuota.
 
----
-
-## Endpoints planificados (Semana 3)
-
-### `GET /workspaces/:id/analyses`
-Historial, recortado a `plan.limites.historialMeses`.
+### `GET /workspaces/:id/analyses` · `GET /workspaces/:id/analyses/:analysisId`
+Historial (CU-S2-14). No ejecuta IA ni consume cupo. Cada item tiene la misma
+forma gateada por plan que `POST /analyze` (`construirEntregaAnalisis`).
 ```json
-{ "analyses": [ { "id": "uuid", "estado": "completada", "creadoEn": "…", … } ] }
+{ "analyses": [ { "id": "uuid", "estado": "completada", "fecha": "…", "bloqueado": false, … } ], "limiteMeses": 12 }
 ```
+- **Pro:** hasta `plan.limites.historialMeses` (12) meses hacia atrás, todos
+  completos. `limiteMeses: 12`.
+- **Gratuito:** solo el último análisis (`limiteMeses: null`), como vista previa.
+
+`GET /:analysisId` → `{ "analisis": { … } }`. `404 no_encontrado` si no es de
+ese workspace (o no está `completada`).
 
 ### `POST /subscription/activate-demo`
-Request: `{ "planId": "pro" }`. Activa la suscripción simulada
-(idempotente: repetir no crea duplicados). Response `200`:
+El plan es de la **cuenta**, no de un workspace — no va bajo `/workspaces/:id`.
+Request: `{ "planId": "pro" }`. Pago **simulado**, sin datos bancarios.
+**Idempotente**: repetirlo no crea otra fila ni reinicia `desde` si ya estaba
+en ese plan. Response `200`:
 ```json
 { "suscripcion": { "planId": "pro", "estado": "active", "simulada": true, "desde": "…" } }
 ```
+`400 plan_invalido` si `planId` no es `"pro"` (no hay pantalla de baja en esta
+entrega, congelado por Semana 2). Al activar, los límites de la cuenta se
+amplían al instante — no hace falta volver a loguearse ni recargar nada
+aparte de pedir `/me` o reintentar la operación que estaba bloqueada.
+
+---
+
+## Fuera de alcance del MVP (a propósito)
+
+Baja de plan (pantalla de cancelación), pago real, colaboradores/multiusuario,
+varias cuentas de Instagram por workspace, exportaciones. Ver
+`docs/modelo-de-datos.md` y los docs de Matu para el detalle de qué queda
+como backlog.

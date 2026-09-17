@@ -16,7 +16,9 @@ Entrega del MVP: **23/09/2026** (demo de punta a punta).
 
 Docs clave: [`docs/modelo-de-datos.md`](docs/modelo-de-datos.md) ·
 [`docs/contrato-api.md`](docs/contrato-api.md) ·
-[`docs/estado-semana-1.md`](docs/estado-semana-1.md)
+[`docs/estado-semana-1.md`](docs/estado-semana-1.md) ·
+[`docs/estado-semana-2-backend.md`](docs/estado-semana-2-backend.md) ·
+[`docs/estado-semana-3-backend.md`](docs/estado-semana-3-backend.md)
 
 ## Stack
 

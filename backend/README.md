@@ -60,14 +60,23 @@ Las claves privadas (Supabase service role, IA, Brave) van **solo acá**, nunca 
 | GET    | `/workspaces/:id/dashboard` | Bearer | Resumen + métricas + último análisis (gateado por plan). |
 | GET/PATCH | `/workspaces/:id/actions/:aid` | Bearer | Cambiar estado de una acción. |
 | POST   | `/workspaces/:id/analyze` | Bearer | Genera el análisis con IA (sincrónico, ~15-25 s). Gate por plan, cuota mensual, 1 activo por cuenta. |
+| GET    | `/workspaces/:id/analyses` \| `.../analyses/:aid` | Bearer | Historial (recortado por plan) y detalle. Sin costo de IA. |
 | GET    | `/workspaces/:id/instagram` | Bearer | Estado de la conexión (simulada). |
 | POST   | `/workspaces/:id/instagram/connect` \| `.../disconnect` | Bearer | Simula conectar Instagram; profesional carga 4 métricas de ejemplo. |
+| POST   | `/subscription/activate-demo` | Bearer | Paywall: pago simulado, idempotente. Amplía los límites de la cuenta al instante. |
 
 Contrato completo (request/response, errores, endpoints de Semana 3):
 [`../docs/contrato-api.md`](../docs/contrato-api.md).
 
 ```bash
 curl http://localhost:4000/health
+node scripts/smoke-semana3.mjs            # recorrido de oro completo (1 sola llamada a Gemini/Brave)
+```
+
+Ese es el que conviene correr para verificar todo de una. Los demás son para debug
+puntual de una parte sin esperar ni gastar cuota de IA en todo el resto:
+
+```bash
 npm run ia:check                          # llamada real a Gemini (sin tocar workspaces)
 npm run brave:check                       # llamada real a Brave Search
 node scripts/smoke-semana2.mjs            # auth + workspaces + aislamiento + límites + archivos
@@ -75,6 +84,8 @@ node scripts/probar-contexto-ia.mjs       # contexto por workspace + aislamiento
 node scripts/probar-analisis-ia.mjs       # salida estructurada (10 campos, exactamente 3 c/u)
 node scripts/probar-analyze-endpoint.mjs  # POST /analyze end-to-end (gate + cuota + acciones)
 node scripts/probar-instagram.mjs         # conectar/desconectar Instagram simulado
+node scripts/probar-historial.mjs         # historial gateado por plan (Gratuito y Pro)
+node scripts/probar-paywall.mjs           # paywall: límite, activar Pro, idempotencia
 node scripts/preguntar-ia.mjs "..."        # pregunta libre a Gemini, para probar a mano
 ```
 
@@ -97,7 +108,7 @@ ia/esquemaAnalisis.js   responseSchema de Gemini + validación de negocio
 ia/analisis.js          genera y valida el análisis estructurado (con 1 reintento)
 middleware/auth.js      requireAuth (valida el Bearer token)
 middleware/workspace.js requireWorkspace (carga + aislamiento) · bloquearSiAnalisisActivo
-routes/                 health · auth · me · workspaces · metrics · files · dashboard · actions · analyze · instagram
+routes/                 health · auth · me · workspaces · metrics · files · dashboard · actions · analyze · analyses · instagram · subscription
 plans/limites.js        límites de cada plan + uso actual (workspaces, bytes, análisis/mes)
 lib/                    validar.js · respuestas.js · entregaAnalisis.js (gate por plan) · datasetInstagram.js (simulado)
 ```

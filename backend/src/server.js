@@ -5,6 +5,8 @@ import { healthRouter } from './routes/health.js';
 import { authRouter } from './routes/auth.js';
 import { meRouter } from './routes/me.js';
 import { workspacesRouter } from './routes/workspaces.js';
+import { subscriptionRouter } from './routes/subscription.js';
+import { devRouter } from './routes/dev.js';
 import { enviarError } from './lib/respuestas.js';
 import { ensureBucket } from './db/storage.js';
 import { supabaseConfigurado } from './db/supabase.js';
@@ -24,6 +26,13 @@ app.use('/health', healthRouter);
 app.use('/auth', authRouter);
 app.use('/me', meRouter);
 app.use('/workspaces', workspacesRouter);
+app.use('/subscription', subscriptionRouter);
+
+// Ruta temporal para que el front tenga algo real para probar (sin login
+// todavía). Se cae afuera sola en producción; sacarla del todo más adelante.
+if (config.entorno !== 'production') {
+  app.use('/dev', devRouter);
+}
 
 // 404
 app.use((req, res) => {

@@ -9,7 +9,8 @@
     "dev": "node --watch src/server.js",
     "db:check": "node src/db/check.js",
     "ia:check": "node src/ia/check.js",
-    "brave:check": "node src/ia/braveCheck.js"
+    "brave:check": "node src/ia/braveCheck.js",
+    "prueba": "node scripts/prueba.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.114.0",
