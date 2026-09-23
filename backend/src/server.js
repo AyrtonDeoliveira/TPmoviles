@@ -6,6 +6,7 @@ import { authRouter } from './routes/auth.js';
 import { meRouter } from './routes/me.js';
 import { workspacesRouter } from './routes/workspaces.js';
 import { subscriptionRouter } from './routes/subscription.js';
+import { onboardingRouter } from './routes/onboarding.js';
 import { devRouter } from './routes/dev.js';
 import { enviarError } from './lib/respuestas.js';
 import { ensureBucket } from './db/storage.js';
@@ -27,6 +28,7 @@ app.use('/auth', authRouter);
 app.use('/me', meRouter);
 app.use('/workspaces', workspacesRouter);
 app.use('/subscription', subscriptionRouter);
+app.use('/onboarding', onboardingRouter);
 
 // Ruta temporal para que el front tenga algo real para probar (sin login
 // todavía). Se cae afuera sola en producción; sacarla del todo más adelante.

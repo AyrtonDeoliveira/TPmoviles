@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { getSupabase } from '../db/supabase.js';
 import { requireAuth } from '../middleware/auth.js';
 import { asyncHandler } from '../lib/respuestas.js';
-import { getPlanDeUsuario } from '../plans/limites.js';
+import { getPlanDeUsuario, bytesUsados, BYTES_POR_MB } from '../plans/limites.js';
 
 export const meRouter = Router();
 
@@ -32,6 +32,7 @@ meRouter.get(
     }
 
     const plan = await getPlanDeUsuario(id);
+    const usadoBytes = await bytesUsados(id);
 
     return res.json({
       usuario: {
@@ -39,6 +40,9 @@ meRouter.get(
         email: perfil.email,
         nombre: perfil.full_name,
         creadoEn: perfil.created_at,
+      },
+      uso: {
+        almacenamientoMb: usadoBytes / BYTES_POR_MB,
       },
       plan: {
         id: plan.plan_id ?? plan.id,

@@ -10,7 +10,9 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { API_URL } from './config';
+import { color, espacio, radio, tipografia } from './theme';
 
 // ⚠️ Pantalla de prueba (temporal) — le pega a POST /dev/preguntar, que junta
 // Brave (busca en la web) + Gemini (arma la respuesta citando fuentes).
@@ -50,51 +52,54 @@ export default function PantallaPreguntarIA() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Text style={styles.titulo}>Preguntarle a la IA</Text>
-      <Text style={styles.subtitulo}>Busca en la web (Brave) y arma la respuesta (Gemini)</Text>
+      <View style={styles.encabezado}>
+        <Ionicons name="sparkles" size={20} color={color.violetaVivo} />
+        <Text style={tipografia.h1}>Preguntarle a la IA</Text>
+      </View>
+      <View style={{ height: espacio.lg }} />
 
       <TextInput
         style={styles.input}
         placeholder="Escribí tu pregunta..."
-        placeholderTextColor="#9ca3af"
+        placeholderTextColor={color.textoTerciario}
         value={pregunta}
         onChangeText={setPregunta}
         multiline
       />
 
       <Pressable
-        style={[styles.boton, resultado.estado === 'cargando' && styles.botonDeshabilitado]}
+        style={({ pressed }) => [styles.boton, (resultado.estado === 'cargando' || pressed) && styles.botonDeshabilitado]}
         onPress={preguntar}
         disabled={resultado.estado === 'cargando'}
       >
-        <Text style={styles.botonTexto}>{resultado.estado === 'cargando' ? 'Pensando...' : 'Preguntar'}</Text>
+        <Text style={tipografia.boton}>{resultado.estado === 'cargando' ? 'Pensando...' : 'Preguntar'}</Text>
       </Pressable>
 
-      <ScrollView style={styles.respuestaBox} contentContainerStyle={{ padding: 16 }}>
-        {resultado.estado === 'inicial' && <Text style={styles.info}>La respuesta va a aparecer acá.</Text>}
+      <ScrollView style={styles.respuestaBox} contentContainerStyle={{ padding: espacio.lg }}>
+        {resultado.estado === 'inicial' && <Text style={tipografia.subtitulo}>La respuesta va a aparecer acá.</Text>}
 
         {resultado.estado === 'cargando' && (
           <View style={styles.row}>
-            <ActivityIndicator />
-            <Text style={styles.info}>Buscando y generando la respuesta (unos segundos)...</Text>
+            <ActivityIndicator color={color.violetaVivo} />
+            <Text style={tipografia.subtitulo}>Buscando y generando la respuesta (unos segundos)...</Text>
           </View>
         )}
 
         {resultado.estado === 'error' && (
           <>
             <Text style={styles.error}>● Error</Text>
-            <Text style={styles.info}>{resultado.mensaje}</Text>
+            <Text style={tipografia.subtitulo}>{resultado.mensaje}</Text>
           </>
         )}
 
         {resultado.estado === 'ok' && (
           <>
-            <Text style={styles.respuestaTexto}>{resultado.respuesta}</Text>
+            <Text style={[tipografia.cuerpo, { lineHeight: 21 }]}>{resultado.respuesta}</Text>
             {resultado.fuentes.length > 0 && (
               <View style={styles.fuentes}>
                 <Text style={styles.fuentesTitulo}>Fuentes</Text>
                 {resultado.fuentes.map((f, i) => (
-                  <Text key={i} style={styles.fuente} numberOfLines={1}>
+                  <Text key={i} style={tipografia.chico} numberOfLines={1}>
                     {i + 1}. {f.titulo}
                   </Text>
                 ))}
@@ -110,89 +115,66 @@ export default function PantallaPreguntarIA() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,
+    backgroundColor: color.fondo,
+    padding: espacio.lg,
   },
-  titulo: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#1a1a2e',
-  },
-  subtitulo: {
-    marginTop: 4,
-    marginBottom: 16,
-    fontSize: 13,
-    color: '#6b7280',
+  encabezado: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacio.sm,
   },
   input: {
     minHeight: 70,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 12,
-    padding: 12,
+    borderColor: color.borde,
+    borderRadius: radio.lg,
+    padding: espacio.md,
     fontSize: 15,
-    color: '#1a1a2e',
+    color: color.textoPrimario,
+    backgroundColor: color.fondoSuave,
     textAlignVertical: 'top',
   },
   boton: {
-    marginTop: 12,
-    backgroundColor: '#1a1a2e',
-    borderRadius: 12,
-    paddingVertical: 12,
+    marginTop: espacio.md,
+    backgroundColor: color.violetaVivo,
+    borderRadius: radio.lg,
+    paddingVertical: espacio.md,
     alignItems: 'center',
   },
   botonDeshabilitado: {
     opacity: 0.6,
   },
-  botonTexto: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 15,
-  },
   respuestaBox: {
-    marginTop: 16,
+    marginTop: espacio.lg,
     flex: 1,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 12,
-    backgroundColor: '#fafafa',
-  },
-  respuestaTexto: {
-    fontSize: 14,
-    lineHeight: 21,
-    color: '#1a1a2e',
+    borderColor: color.borde,
+    borderRadius: radio.lg,
+    backgroundColor: color.fondoSuave,
   },
   fuentes: {
-    marginTop: 16,
+    marginTop: espacio.lg,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    paddingTop: 12,
+    borderTopColor: color.borde,
+    paddingTop: espacio.md,
   },
   fuentesTitulo: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#6b7280',
+    color: color.textoTerciario,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 6,
-  },
-  fuente: {
-    fontSize: 12,
-    color: '#4b5563',
-    marginBottom: 4,
+    marginBottom: espacio.sm,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-  },
-  info: {
-    fontSize: 13,
-    color: '#6b7280',
+    gap: espacio.sm,
   },
   error: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#b91c1c',
-    marginBottom: 4,
+    color: color.peligro,
+    marginBottom: espacio.xs,
   },
 });

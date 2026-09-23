@@ -40,6 +40,9 @@ metricsRouter.get(
     for (const m of data) if (!ultimaPorTipo.has(m.metric_type)) ultimaPorTipo.set(m.metric_type, m);
     const metricas = [...ultimaPorTipo.values()].map(serializar);
 
+    // ?historial=1 -> además todos los registros (para graficar la evolución).
+    const historial = req.query.historial === '1' ? data.slice(0, 500).map(serializar) : undefined;
+
     // Conversión calculada: pedidos / consultas × 100 (solo si consultas > 0).
     const consultas = metricas.find((x) => x.tipo === 'consultas' && x.estado === 'ok');
     const pedidos = metricas.find((x) => x.tipo === 'pedidos' && x.estado === 'ok');
@@ -51,7 +54,7 @@ metricsRouter.get(
           : { valor: null, calculable: false, motivo: 'consultas_en_cero' };
     }
 
-    res.json({ metricas, conversion });
+    res.json({ metricas, conversion, ...(historial ? { historial } : {}) });
   })
 );
 

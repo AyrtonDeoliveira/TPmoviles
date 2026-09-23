@@ -92,10 +92,10 @@ analyzeRouter.post(
         return res.status(503).json({
           error: 'La IA está sin cupo por el momento. Probá de nuevo en unos minutos.',
           codigo: 'ia_ocupada',
-          analisisId,
+          analisisId: analysisId,
         });
       }
-      return res.status(502).json({ error: 'No se pudo generar el análisis. Podés reintentar.', codigo: 'analisis_fallo', analisisId });
+      return res.status(502).json({ error: 'No se pudo generar el análisis. Podés reintentar.', codigo: 'analisis_fallo', analisisId: analysisId });
     }
 
     if (!resultado.ok) {
@@ -108,7 +108,7 @@ analyzeRouter.post(
           completed_at: new Date().toISOString(),
         })
         .eq('id', analysisId);
-      return res.status(502).json({ error: 'La IA no devolvió un resultado válido. Podés reintentar.', codigo: 'analisis_fallo', analisisId });
+      return res.status(502).json({ error: 'La IA no devolvió un resultado válido. Podés reintentar.', codigo: 'analisis_fallo', analisisId: analysisId });
     }
 
     const r = resultado.resultado;

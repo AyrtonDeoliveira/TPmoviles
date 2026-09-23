@@ -22,7 +22,7 @@ Docs clave: [`docs/modelo-de-datos.md`](docs/modelo-de-datos.md) ·
 
 ## Stack
 
-- **App móvil:** Expo SDK 54 + React Native 0.81 + TypeScript
+- **App móvil:** Expo SDK 57 + React Native 0.86 + TypeScript
 - **Backend:** Node.js + Express (auth con Supabase Auth ya funcionando)
 - **Base de datos / Storage / Auth:** Supabase (PostgreSQL)
 - **IA:** por definir
@@ -31,7 +31,7 @@ Docs clave: [`docs/modelo-de-datos.md`](docs/modelo-de-datos.md) ·
 
 - Node.js 20 o superior
 - npm
-- App **Expo Go** en el celular (compatible con **Expo SDK 54**), o un emulador Android / iOS
+- App **Expo Go** en el celular (compatible con **Expo SDK 57**), o un emulador Android / iOS
 
 ## Cómo correr la app móvil
 
